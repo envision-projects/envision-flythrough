@@ -3,234 +3,137 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>3D Scan Demo — Collider Editor</title>
+    <title>3D Scan Demo</title>
     <style>
-      html, body { margin: 0; padding: 0; overflow: hidden; font-family: monospace; font-size: 14px; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: monospace;
+        font-size: 14px;
+      }
 
       #ui {
-        position: fixed; top: 10px; left: 10px; z-index: 10;
-        background: #fff; color: #000; border: 1px solid #000; padding: 8px;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+        padding: 8px;
       }
+
       #ui button {
-        display: block; width: 100%; margin: 0 0 4px 0; padding: 4px 8px;
-        background: #fff; color: #000; border: 1px solid #000; font: inherit;
-        text-align: left; cursor: pointer;
+        display: block;
+        width: 100%;
+        margin: 0 0 4px 0;
+        padding: 4px 8px;
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
       }
-      #ui button:last-child { margin-bottom: 0; }
-      #ui button.active { background: #000; color: #fff; }
+
+      #ui button:last-child {
+        margin-bottom: 0;
+      }
+
+      #ui button.active {
+        background: #000;
+        color: #fff;
+      }
 
       #hint {
-        margin-top: 6px; padding-top: 6px; border-top: 1px solid #000; font-size: 12px;
-        max-width: 210px; line-height: 1.4;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid #000;
+        font-size: 12px;
       }
 
       #loading {
-        position: fixed; top: 10px; right: 10px; z-index: 10;
-        background: #fff; color: #000; border: 1px solid #000; padding: 4px 8px;
-        font-family: monospace; font-size: 12px;
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+        padding: 4px 8px;
+        font-family: monospace;
+        font-size: 12px;
       }
 
+      /* In-universe label styles */
       .scene-label {
-        background: #fff; color: #000; border: 1px solid #000;
-        padding: 2px 6px; font-family: monospace; font-size: 12px; white-space: nowrap;
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+        padding: 2px 6px;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: nowrap;
       }
-
-      /* Splat rotation helper */
-      #splat-helper {
-        position: fixed; bottom: 10px; right: 10px; z-index: 10;
-        background: #fff; color: #000; border: 1px solid #000; padding: 8px;
-        width: 240px; font-size: 12px;
-      }
-      #splat-helper h3 { margin: 0 0 6px 0; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 4px; }
-      #splat-helper label { display: block; margin: 4px 0 0 0; }
-      #splat-helper input[type=range] { width: 100%; }
-      #splat-helper .val { float: right; }
-      #splat-helper .row { display: flex; gap: 4px; margin-top: 6px; }
-      #splat-helper button {
-        flex: 1; padding: 3px 6px; background: #fff; color: #000;
-        border: 1px solid #000; font: inherit; cursor: pointer;
-      }
-      #splat-helper button:hover { background: #000; color: #fff; }
-      #splat-helper.collapsed .body { display: none; }
-
-      /* Coordinate readout */
-      #coords {
-        position: fixed; bottom: 10px; left: 10px; z-index: 10;
-        background: #fff; color: #000; border: 1px solid #000; padding: 6px 8px;
-        font-size: 12px; white-space: pre; line-height: 1.5; min-width: 200px;
-      }
-      #coords .dim { color: #888; }
-      #coords .frozen { background: #ff0; }
-      #coords button {
-        margin-top: 4px; width: 100%; padding: 3px 6px; background: #fff; color: #000;
-        border: 1px solid #000; font: inherit; cursor: pointer;
-      }
-      #coords button:hover { background: #000; color: #fff; }
-
-      /* Collider editor panel */
-      #editor-panel {
-        position: fixed; top: 60px; right: 10px; z-index: 10;
-        background: #fff; color: #000; border: 1px solid #000; padding: 8px;
-        width: 240px; font-size: 12px; display: none;
-      }
-      #editor-panel.visible { display: block; }
-      #editor-panel h3 {
-        margin: 0 0 6px 0; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 4px;
-      }
-      #editor-panel .row { display: flex; gap: 4px; margin-top: 4px; }
-      #editor-panel button {
-        flex: 1; padding: 3px 6px; background: #fff; color: #000;
-        border: 1px solid #000; font: inherit; cursor: pointer;
-      }
-      #editor-panel button:hover { background: #000; color: #fff; }
-      #editor-panel button:disabled { color: #999; border-color: #999; cursor: not-allowed; }
-      #editor-panel button.active { background: #000; color: #fff; }
-      #editor-panel .size-row { display: flex; gap: 4px; margin-top: 4px; align-items: center; }
-      #editor-panel .size-row label { flex: 1; display: flex; align-items: center; gap: 4px; }
-      #editor-panel .size-row input { width: 100%; padding: 2px 3px; border: 1px solid #000; font: inherit; }
-      #editor-panel .section { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #999; }
-      #editor-panel .info { color: #666; font-size: 11px; margin-top: 6px; line-height: 1.4; }
-      #editor-panel .sel-info { color: #000; background: #eee; padding: 4px; margin-top: 6px; font-size: 11px; }
     </style>
 
     <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-        "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.0.0/spark.module.js",
-        "rapier": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.14.0/rapier.es.js"
-      }
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+      "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.0.0/spark.module.js"
     }
+  }
     </script>
   </head>
 
   <body>
+    <!-- UI Overlay -->
     <div id="ui">
       <button class="active" data-mode="orbit">Orbit</button>
       <button data-mode="fly">Fly</button>
       <button data-mode="character">Character</button>
-      <button data-mode="editor">Collider Editor</button>
       <div id="hint"></div>
     </div>
 
     <div id="loading">0%</div>
 
-    <!-- Collider editor panel (visible only in editor mode) -->
-    <div id="editor-panel">
-      <h3>Collider Editor</h3>
-      <div class="row">
-        <button id="ed-add-box">+ Box</button>
-        <button id="ed-add-plane">+ Plane</button>
-      </div>
-      <div class="row">
-        <button id="ed-mode-translate" class="active">Move</button>
-        <button id="ed-mode-rotate">Rotate</button>
-      </div>
-      <div class="row">
-        <button id="ed-duplicate" disabled>Duplicate</button>
-        <button id="ed-delete" disabled>Delete</button>
-      </div>
-      <div class="sel-info" id="ed-sel-info">Nothing selected</div>
-      <div class="size-row">
-        <label>X <input type="number" id="ed-size-x" step="0.05" disabled></label>
-        <label>Y <input type="number" id="ed-size-y" step="0.05" disabled></label>
-        <label>Z <input type="number" id="ed-size-z" step="0.05" disabled></label>
-      </div>
-      <div class="section">
-        <div class="row">
-          <button id="ed-toggle-vis">Hide All</button>
-          <button id="ed-clear-all">Clear All</button>
-        </div>
-        <div class="row">
-          <button id="ed-bake" style="font-weight:bold;">Bake → Copy Code</button>
-        </div>
-      </div>
-      <div class="info">
-        Click a green box to select. Move/Rotate gizmo to edit.<br>
-        Delete / Backspace removes selection.<br>
-        Draft auto-saves; Bake to paste into your file.
-      </div>
-    </div>
-
-    <!-- Splat rotation helper -->
-    <div id="splat-helper">
-      <h3>Splat Helper <button id="sh-toggle" style="float:right;width:auto;padding:0 4px;">–</button></h3>
-      <div class="body">
-        <label>Rot X <span class="val" id="sh-rx-val">0°</span>
-          <input type="range" id="sh-rx" min="-180" max="180" step="0.5" value="0">
-        </label>
-        <label>Rot Y <span class="val" id="sh-ry-val">0°</span>
-          <input type="range" id="sh-ry" min="-180" max="180" step="0.5" value="0">
-        </label>
-        <label>Rot Z <span class="val" id="sh-rz-val">0°</span>
-          <input type="range" id="sh-rz" min="-180" max="180" step="0.5" value="0">
-        </label>
-        <label>Pos X <span class="val" id="sh-px-val">0</span>
-          <input type="range" id="sh-px" min="-10" max="10" step="0.01" value="0">
-        </label>
-        <label>Pos Y <span class="val" id="sh-py-val">0</span>
-          <input type="range" id="sh-py" min="-10" max="10" step="0.01" value="0">
-        </label>
-        <label>Pos Z <span class="val" id="sh-pz-val">0</span>
-          <input type="range" id="sh-pz" min="-10" max="10" step="0.01" value="0">
-        </label>
-        <label>Scale <span class="val" id="sh-s-val">1</span>
-          <input type="range" id="sh-s" min="0.1" max="20" step="0.01" value="1">
-        </label>
-        <div class="row">
-          <button id="sh-reset">Reset</button>
-          <button id="sh-copy">Copy</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Coordinate readout -->
-    <div id="coords">
-      <div id="coords-text"></div>
-      <button id="coords-btn">Snapshot / Copy</button>
-    </div>
-
     <script type="module">
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
       import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
-      import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-      import { TransformControls } from "three/addons/controls/TransformControls.js";
-      import { SparkRenderer, SplatLoader, SplatMesh } from "@sparkjsdev/spark";
-      import RAPIER from "rapier";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      import {
+        CSS2DRenderer,
+        CSS2DObject,
+      } from "three/addons/renderers/CSS2DRenderer.js";
+      import { SparkRenderer, SplatLoader, SplatMesh } from "@sparkjsdev/spark";;
 
       // ============================================================
       // CONSTANTS
       // ============================================================
-      const FLY_SPEED  = 8;
+      const FLY_SPEED = 8;
       const MOVE_SPEED = 6;
       const JUMP_SPEED = 8;
-      const GRAVITY    = 25;
+      const GRAVITY = 25;
 
-      const CAPSULE_HALF   = 0.5;
-      const CAPSULE_RADIUS = 0.3;
-      const CAPSULE_CENTER_Y = CAPSULE_HALF + CAPSULE_RADIUS; // 0.8
-      const EYE_OFFSET = 0.7;
-
-      const CHARACTER_SPAWN = { x: 0, y: CAPSULE_CENTER_Y, z: 5 };
-
-      // Hardcoded startup camera pose (applied after controls init)
-      const INITIAL_CAMERA = {
-        position: new THREE.Vector3(-1.071, 0.717, -4.185),
-        rotation: new THREE.Euler(-3.0626601381683494, -0.16793558062689437, -3.1283735298351885, "XYZ"),
-      };
-
-      const main = async () => {
+      const main = () => {
         // ==========================================================
-        // SCENE / CAMERA / RENDERERS
+        // SCENE, CAMERA, RENDERERS
         // ==========================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xeeeeee);
 
         const camera = new THREE.PerspectiveCamera(
-          75, window.innerWidth / window.innerHeight, 0.1, 1000
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
         );
+        camera.position.set(0, 1.5, 5);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -240,6 +143,7 @@
         const spark = new SparkRenderer({ renderer });
         scene.add(spark);
 
+        // CSS2D label renderer (overlay for in-universe labels)
         const labelRenderer = new CSS2DRenderer();
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.domElement.style.position = "absolute";
@@ -249,683 +153,442 @@
         document.body.appendChild(labelRenderer.domElement);
 
         // ==========================================================
-        // LIGHTING + HELPERS
+        // LIGHTING
         // ==========================================================
         scene.add(new THREE.AmbientLight(0x404060));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(3, 5, 2);
-        scene.add(dirLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(3, 5, 2);
+        scene.add(directionalLight);
+
         const fillLight = new THREE.PointLight(0x4466ff, 0.5);
         fillLight.position.set(-3, 1, 2);
         scene.add(fillLight);
 
+        // ==========================================================
+        // GRID
+        // ==========================================================
         const gridHelper = new THREE.GridHelper(10, 20, 0x888888, 0x444444);
         gridHelper.material.transparent = true;
         gridHelper.material.opacity = 0.3;
         gridHelper.material.depthWrite = false;
-        // scene.add(gridHelper);
-
-        const axes = new THREE.AxesHelper(2);
-        scene.add(axes);
+        //scene.add(gridHelper);
 
         // ==========================================================
-        // RAPIER
-        // ==========================================================
-        await RAPIER.init();
-        const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
-
-        // ==========================================================
-        // COLLIDER SYSTEM
-        // ==========================================================
-        const INITIAL_COLLIDERS = [
-          {
-            "t": "plane",
-            "p": [0.39, 0.13, -0.936],
-            "q": [0, 0, 0, 1],
-            "s": [25, 0.1, 25]
-          }
-        ];
-
-        const COLLIDERS = [];
-        const colliderGroup = new THREE.Group();
-        scene.add(colliderGroup);
-
-        const colliderMatDefault  = new THREE.MeshBasicMaterial({
-          color: 0x00cc44, wireframe: true, transparent: true, opacity: 0.55, depthWrite: false,
-        });
-        const colliderMatSelected = new THREE.MeshBasicMaterial({
-          color: 0xffcc00, wireframe: true, transparent: true, opacity: 1.0, depthWrite: false,
-        });
-
-        function addCollider(type, opts = {}) {
-          const size = opts.size
-            ? opts.size.clone()
-            : (type === "plane" ? new THREE.Vector3(5, 0.1, 5) : new THREE.Vector3(1, 1, 1));
-          const position = opts.position ? opts.position.clone() : new THREE.Vector3(0, size.y / 2, 0);
-          const quaternion = opts.quaternion ? opts.quaternion.clone() : new THREE.Quaternion();
-
-          const geo = new THREE.BoxGeometry(size.x, size.y, size.z);
-          const mesh = new THREE.Mesh(geo, colliderMatDefault);
-          mesh.position.copy(position);
-          mesh.quaternion.copy(quaternion);
-          mesh.userData.isCollider = true;
-          colliderGroup.add(mesh);
-
-          const body = world.createRigidBody(
-            RAPIER.RigidBodyDesc.fixed()
-              .setTranslation(position.x, position.y, position.z)
-              .setRotation({ x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w })
-          );
-          const collider = world.createCollider(
-            RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2),
-            body
-          );
-
-          const c = { mesh, body, collider, type, size: size.clone() };
-          COLLIDERS.push(c);
-          saveDraft();
-          return c;
-        }
-
-        function removeCollider(c) {
-          if (!c) return;
-          if (selectedCollider === c) deselectCollider();
-          colliderGroup.remove(c.mesh);
-          c.mesh.geometry.dispose();
-          world.removeRigidBody(c.body);
-          const i = COLLIDERS.indexOf(c);
-          if (i >= 0) COLLIDERS.splice(i, 1);
-          saveDraft();
-        }
-
-        function updateColliderSize(c, newSize) {
-          if (!c) return;
-          c.size.copy(newSize);
-          c.mesh.geometry.dispose();
-          c.mesh.geometry = new THREE.BoxGeometry(newSize.x, newSize.y, newSize.z);
-          world.removeCollider(c.collider, false);
-          c.collider = world.createCollider(
-            RAPIER.ColliderDesc.cuboid(newSize.x / 2, newSize.y / 2, newSize.z / 2),
-            c.body
-          );
-          saveDraft();
-        }
-
-        function syncColliderToBody(c) {
-          if (!c) return;
-          const p = c.mesh.position;
-          const q = c.mesh.quaternion;
-          c.body.setTranslation({ x: p.x, y: p.y, z: p.z }, false);
-          c.body.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, false);
-          saveDraft();
-        }
-
-        // ---- Draft persistence ----
-        const DRAFT_KEY = "collider_editor_draft_v1";
-        function saveDraft() {
-          try {
-            const data = COLLIDERS.map((c) => ({
-              t: c.type,
-              p: [c.mesh.position.x, c.mesh.position.y, c.mesh.position.z],
-              q: [c.mesh.quaternion.x, c.mesh.quaternion.y, c.mesh.quaternion.z, c.mesh.quaternion.w],
-              s: [c.size.x, c.size.y, c.size.z],
-            }));
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-          } catch (e) { /* ignore */ }
-        }
-        function loadDraft() {
-          try {
-            const data = JSON.parse(localStorage.getItem(DRAFT_KEY) || "[]");
-            if (!Array.isArray(data) || !data.length) return false;
-            for (const d of data) {
-              addCollider(d.t, {
-                size: new THREE.Vector3(...d.s),
-                position: new THREE.Vector3(...d.p),
-                quaternion: new THREE.Quaternion(...d.q),
-              });
-            }
-            return true;
-          } catch (e) {
-            return false;
-          }
-        }
-
-        // ---- Reusable loader (used by Bake output) ----
-        function loadColliders(data) {
-          for (const d of data) {
-            addCollider(d.t, {
-              size: new THREE.Vector3(...d.s),
-              position: new THREE.Vector3(...d.p),
-              quaternion: new THREE.Quaternion(...d.q),
-            });
-          }
-        }
-
-        // Load saved draft if present, otherwise load baked INITIAL_COLLIDERS
-        if (!loadDraft()) {
-          loadColliders(INITIAL_COLLIDERS);
-        }
-
-        // ==========================================================
-        // CONTROLS (ORBIT + POINTER LOCK + TRANSFORM)
-        // ==========================================================
-        let currentMode = "orbit";
-
-        const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.enableDamping = true;
-        orbitControls.dampingFactor = 0.08;
-
-        const pointerControls = new PointerLockControls(camera, document.body);
-
-        const transformControls = new TransformControls(camera, renderer.domElement);
-        transformControls.setSize(0.8);
-        transformControls.setSpace("world");
-
-        const tcHelper = typeof transformControls.getHelper === "function"
-          ? transformControls.getHelper()
-          : transformControls;
-        scene.add(tcHelper);
-
-        transformControls.addEventListener("dragging-changed", (e) => {
-          orbitControls.enabled = !e.value && (currentMode === "orbit" || currentMode === "editor");
-        });
-        transformControls.addEventListener("objectChange", () => {
-          if (selectedCollider) syncColliderToBody(selectedCollider);
-        });
-
-        // ==========================================================
-        // SELECTION
-        // ==========================================================
-        let selectedCollider = null;
-        const raycaster = new THREE.Raycaster();
-        const pointerNDC = new THREE.Vector2();
-
-        function pickCollider(clientX, clientY) {
-          const rect = renderer.domElement.getBoundingClientRect();
-          pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-          pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-          raycaster.setFromCamera(pointerNDC, camera);
-          const hits = raycaster.intersectObjects(colliderGroup.children, false);
-          for (const hit of hits) {
-            const c = COLLIDERS.find((cc) => cc.mesh === hit.object);
-            if (c) return c;
-          }
-          return null;
-        }
-
-        function selectCollider(c) {
-          if (selectedCollider === c) return;
-          if (selectedCollider) selectedCollider.mesh.material = colliderMatDefault;
-          selectedCollider = c;
-          if (c) {
-            c.mesh.material = colliderMatSelected;
-            transformControls.attach(c.mesh);
-          } else {
-            transformControls.detach();
-          }
-          refreshEditorUI();
-        }
-
-        function deselectCollider() {
-          selectCollider(null);
-        }
-
-        // ==========================================================
-        // EDITOR UI WIRING
-        // ==========================================================
-        const panelEl = document.getElementById("editor-panel");
-        const selInfoEl = document.getElementById("ed-sel-info");
-        const sizeXEl = document.getElementById("ed-size-x");
-        const sizeYEl = document.getElementById("ed-size-y");
-        const sizeZEl = document.getElementById("ed-size-z");
-        const btnDup  = document.getElementById("ed-duplicate");
-        const btnDel  = document.getElementById("ed-delete");
-        const btnMove = document.getElementById("ed-mode-translate");
-        const btnRot  = document.getElementById("ed-mode-rotate");
-        const btnVis  = document.getElementById("ed-toggle-vis");
-
-        let collidersVisible = true;
-
-        function refreshEditorUI() {
-          const has = !!selectedCollider;
-          btnDup.disabled = !has;
-          btnDel.disabled = !has;
-          sizeXEl.disabled = !has;
-          sizeYEl.disabled = !has;
-          sizeZEl.disabled = !has;
-
-          if (has) {
-            selInfoEl.textContent =
-              `${selectedCollider.type} — ${COLLIDERS.indexOf(selectedCollider) + 1}/${COLLIDERS.length}`;
-            sizeXEl.value = selectedCollider.size.x.toFixed(2);
-            sizeYEl.value = selectedCollider.size.y.toFixed(2);
-            sizeZEl.value = selectedCollider.size.z.toFixed(2);
-          } else {
-            selInfoEl.textContent = COLLIDERS.length
-              ? `Nothing selected (${COLLIDERS.length} colliders)`
-              : "Nothing selected (no colliders yet)";
-            sizeXEl.value = "";
-            sizeYEl.value = "";
-            sizeZEl.value = "";
-          }
-        }
-
-        function newColliderPosition(size) {
-          const forward = new THREE.Vector3();
-          camera.getWorldDirection(forward);
-          const pos = camera.position.clone().addScaledVector(forward, 2);
-          pos.y = Math.max(size.y / 2, 0.05);
-          return pos;
-        }
-
-        document.getElementById("ed-add-box").addEventListener("click", () => {
-          const size = new THREE.Vector3(1, 1, 1);
-          const c = addCollider("box", { size, position: newColliderPosition(size) });
-          selectCollider(c);
-        });
-
-        document.getElementById("ed-add-plane").addEventListener("click", () => {
-          const size = new THREE.Vector3(5, 0.1, 5);
-          const c = addCollider("plane", { size, position: newColliderPosition(size) });
-          selectCollider(c);
-        });
-
-        btnMove.addEventListener("click", () => {
-          transformControls.setMode("translate");
-          btnMove.classList.add("active");
-          btnRot.classList.remove("active");
-        });
-        btnRot.addEventListener("click", () => {
-          transformControls.setMode("rotate");
-          btnRot.classList.add("active");
-          btnMove.classList.remove("active");
-        });
-
-        btnDup.addEventListener("click", () => {
-          if (!selectedCollider) return;
-          const s = selectedCollider;
-          const c = addCollider(s.type, {
-            size: s.size.clone(),
-            position: s.mesh.position.clone(),
-            quaternion: s.mesh.quaternion.clone(),
-          });
-          selectCollider(c);
-        });
-
-        btnDel.addEventListener("click", () => {
-          if (selectedCollider) removeCollider(selectedCollider);
-        });
-
-        btnVis.addEventListener("click", () => {
-          collidersVisible = !collidersVisible;
-          colliderGroup.visible = collidersVisible;
-          btnVis.textContent = collidersVisible ? "Hide All" : "Show All";
-        });
-
-        document.getElementById("ed-clear-all").addEventListener("click", () => {
-          if (!COLLIDERS.length) return;
-          if (!confirm(`Delete all ${COLLIDERS.length} colliders? (You can undo by not baking.)`)) return;
-          while (COLLIDERS.length) removeCollider(COLLIDERS[0]);
-        });
-
-        function applySizeInputs() {
-          if (!selectedCollider) return;
-          const sx = Math.max(0.01, parseFloat(sizeXEl.value) || 0.01);
-          const sy = Math.max(0.01, parseFloat(sizeYEl.value) || 0.01);
-          const sz = Math.max(0.01, parseFloat(sizeZEl.value) || 0.01);
-          updateColliderSize(selectedCollider, new THREE.Vector3(sx, sy, sz));
-        }
-        [sizeXEl, sizeYEl, sizeZEl].forEach((el) => {
-          el.addEventListener("change", applySizeInputs);
-        });
-
-        document.getElementById("ed-bake").addEventListener("click", () => {
-          const data = COLLIDERS.map((c) => ({
-            t: c.type,
-            p: [
-              +c.mesh.position.x.toFixed(3),
-              +c.mesh.position.y.toFixed(3),
-              +c.mesh.position.z.toFixed(3),
-            ],
-            q: [
-              +c.mesh.quaternion.x.toFixed(4),
-              +c.mesh.quaternion.y.toFixed(4),
-              +c.mesh.quaternion.z.toFixed(4),
-              +c.mesh.quaternion.w.toFixed(4),
-            ],
-            s: [
-              +c.size.x.toFixed(3),
-              +c.size.y.toFixed(3),
-              +c.size.z.toFixed(3),
-            ],
-          }));
-
-          const code =
-`const INITIAL_COLLIDERS = ${JSON.stringify(data, null, 2)};\n`;
-          navigator.clipboard.writeText(code);
-          const btn = document.getElementById("ed-bake");
-          const old = btn.textContent;
-          btn.textContent = `Copied ${data.length} colliders!`;
-          setTimeout(() => (btn.textContent = old), 1400);
-        });
-
-        // ==========================================================
-        // SPLAT + SPLAT ROTATION HELPER
+        // MODEL LOADING
         // ==========================================================
         const loadingEl = document.getElementById("loading");
         const loader = new SplatLoader();
-        let splatModel = null;
-        const helperState = {
-          rx: 1.0, ry: -34.0, rz: -3.5,
-          px: 0.13, py: 0.97, pz: -0.13,
-          scale: 1,
-          defaults: null,
-        };
-        helperState.defaults = {
-          rx: helperState.rx, ry: helperState.ry, rz: helperState.rz,
-          px: helperState.px, py: helperState.py, pz: helperState.pz,
-          scale: helperState.scale,
-        };
+        
+loader.load(
+  "assets/Model.sog",
+  (packedSplats) => {
+    // Loading complete, create SplatMesh
+    const splatModel = new SplatMesh({ packedSplats });
+    splatModel.quaternion.set(1, 0, 0, 0);
+    scene.add(splatModel);
+    loadingEl.style.display = "none";
+  },
+  (event) => {
+    // Progress callback
+    if (event.lengthComputable && event.total > 0) {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      loadingEl.textContent = `${percent}%`;
+    } else {
+      const mb = (event.loaded / 1048576).toFixed(1);
+      loadingEl.textContent = `${mb} MB`;
+    }
+  },
+  (error) => {
+    console.error("Splat load failed:", error);
+    loadingEl.textContent = "Load failed";
+    loadingEl.style.color = "red";
+  }
+);
+        const splatURL = "assets/bowl.sog";
+        const splatModel = new SplatMesh({ url: splatURL });
 
-        const els = {
-          rx: document.getElementById("sh-rx"),
-          ry: document.getElementById("sh-ry"),
-          rz: document.getElementById("sh-rz"),
-          px: document.getElementById("sh-px"),
-          py: document.getElementById("sh-py"),
-          pz: document.getElementById("sh-pz"),
-          s:  document.getElementById("sh-s"),
-          rxV: document.getElementById("sh-rx-val"),
-          ryV: document.getElementById("sh-ry-val"),
-          rzV: document.getElementById("sh-rz-val"),
-          pxV: document.getElementById("sh-px-val"),
-          pyV: document.getElementById("sh-py-val"),
-          pzV: document.getElementById("sh-pz-val"),
-          sV:  document.getElementById("sh-s-val"),
-          reset: document.getElementById("sh-reset"),
-          copy:  document.getElementById("sh-copy"),
-        };
+        splatModel.quaternion.set(1,0,0,0);
+        splatModel.position.set(0,0,0);
+        splatModel.scale.setScalar(10.0);
+        scene.add(splatModel);
+        /*loader.load(
+          "assets/plush_cat_photoscan.glb",
+          (gltf) => {
+            const model = gltf.scene;
 
-        function applyHelperState() {
-          if (!splatModel) return;
-          const d2r = Math.PI / 180;
-          const flip = new THREE.Quaternion(1, 0, 0, 0);
-          const euler = new THREE.Euler(
-            helperState.rx * d2r, helperState.ry * d2r, helperState.rz * d2r, "XYZ"
-          );
-          const q = new THREE.Quaternion().setFromEuler(euler);
-          splatModel.quaternion.copy(flip).multiply(q);
-          splatModel.position.set(helperState.px, helperState.py, helperState.pz);
-          splatModel.scale.setScalar(helperState.scale);
-          els.rxV.textContent = helperState.rx.toFixed(1) + "°";
-          els.ryV.textContent = helperState.ry.toFixed(1) + "°";
-          els.rzV.textContent = helperState.rz.toFixed(1) + "°";
-          els.pxV.textContent = helperState.px.toFixed(2);
-          els.pyV.textContent = helperState.py.toFixed(2);
-          els.pzV.textContent = helperState.pz.toFixed(2);
-          els.sV.textContent  = helperState.scale.toFixed(2);
-        }
+            // --- Scale to a target size ---
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const targetSize = 5;
+            const scale = targetSize / maxDim;
+            model.scale.setScalar(scale);
 
-        function readInputsIntoState() {
-          helperState.rx = parseFloat(els.rx.value);
-          helperState.ry = parseFloat(els.ry.value);
-          helperState.rz = parseFloat(els.rz.value);
-          helperState.px = parseFloat(els.px.value);
-          helperState.py = parseFloat(els.py.value);
-          helperState.pz = parseFloat(els.pz.value);
-          helperState.scale = parseFloat(els.s.value);
-        }
+            // --- Recenter at origin ---
+            const box2 = new THREE.Box3().setFromObject(model);
+            const center = box2.getCenter(new THREE.Vector3());
+            model.position.sub(center);
 
-        ["rx","ry","rz","px","py","pz","s"].forEach((k) => {
-          const id = k === "s" ? "sh-s" : "sh-" + k;
-          document.getElementById(id).addEventListener("input", () => {
-            readInputsIntoState();
-            applyHelperState();
-          });
-        });
+            scene.add(model);
 
-        els.reset.addEventListener("click", () => {
-          if (!helperState.defaults) return;
-          Object.assign(helperState, helperState.defaults);
-          els.rx.value = helperState.rx; els.ry.value = helperState.ry; els.rz.value = helperState.rz;
-          els.px.value = helperState.px; els.py.value = helperState.py; els.pz.value = helperState.pz;
-          els.s.value  = helperState.scale;
-          applyHelperState();
-        });
+            // --- Add in-universe label above the model ---
+            const top = box2.max.y - center.y; // model's top in recentered space
+            addSceneLabel(model, "Plush Cat Scan", new THREE.Vector3(0, top + 0.4, 0));
 
-        els.copy.addEventListener("click", () => {
-          const d2r = Math.PI / 180;
-          const code =
-`splatModel.quaternion.set(1, 0, 0, 0);
-splatModel.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(${(helperState.rx*d2r).toFixed(6)}, ${(helperState.ry*d2r).toFixed(6)}, ${(helperState.rz*d2r).toFixed(6)}, "XYZ")));
-splatModel.position.set(${helperState.px}, ${helperState.py}, ${helperState.pz});
-splatModel.scale.setScalar(${helperState.scale});`;
-          navigator.clipboard.writeText(code);
-          const old = els.copy.textContent;
-          els.copy.textContent = "Copied!";
-          setTimeout(() => (els.copy.textContent = old), 1000);
-        });
-
-        document.getElementById("sh-toggle").addEventListener("click", (e) => {
-          e.stopPropagation();
-          const panel = document.getElementById("splat-helper");
-          panel.classList.toggle("collapsed");
-          e.target.textContent = panel.classList.contains("collapsed") ? "+" : "–";
-        });
-
-        loader.load(
-          "assets/Model.sog",
-          (packedSplats) => {
-            splatModel = new SplatMesh({ packedSplats });
-
-            els.rx.value = helperState.rx;
-            els.ry.value = helperState.ry;
-            els.rz.value = helperState.rz;
-            els.px.value = helperState.px;
-            els.py.value = helperState.py;
-            els.pz.value = helperState.pz;
-            els.s.value  = helperState.scale;
-            applyHelperState();
-            scene.add(splatModel);
+            // --- Hide loading indicator ---
             loadingEl.style.display = "none";
           },
-          (event) => {
-            if (event.lengthComputable && event.total > 0) {
-              loadingEl.textContent = Math.round((event.loaded / event.total) * 100) + "%";
+          (progress) => {
+            if (progress.total > 0) {
+              const percent = Math.round(
+                (progress.loaded / progress.total) * 100
+              );
+              loadingEl.textContent = `${percent}%`;
             } else {
-              loadingEl.textContent = (event.loaded / 1048576).toFixed(1) + " MB";
+              const mb = (progress.loaded / 1048576).toFixed(1);
+              loadingEl.textContent = `${mb} MB`;
             }
           },
           (error) => {
-            console.error("Splat load failed:", error);
+            console.error("Failed to load model:", error);
             loadingEl.textContent = "Load failed";
             loadingEl.style.color = "red";
+            loadingEl.style.borderColor = "red";
           }
         );
+        */
+        // Creates a CSS2D label attached to `parent` at local `position`
+        function addSceneLabel(parent, text, position) {
+          const div = document.createElement("div");
+          div.className = "scene-label";
+          div.textContent = text;
 
-        // Optional second splat from original file
-        try {
-          const bowlSplat = new SplatMesh({ url: "assets/bowl.sog" });
-          bowlSplat.quaternion.set(1, 0, 0, 0);
-          bowlSplat.position.set(0, 0, 0);
-          bowlSplat.scale.setScalar(10.0);
-          scene.add(bowlSplat);
-        } catch (e) { /* ignore if missing */ }
-
-        // ==========================================================
-        // COORDINATE READOUT
-        // ==========================================================
-        const coordsTextEl = document.getElementById("coords-text");
-        const coordsBtn = document.getElementById("coords-btn");
-        let frozenSnapshot = null;
-
-        function formatCameraAsCode(p, r) {
-          return `camera.position.set(${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)});
-camera.rotation.set(${r.x}, ${r.y}, ${r.z});`;
+          const label = new CSS2DObject(div);
+          label.position.copy(position);
+          parent.add(label);
+          return label;
         }
 
-        function updateCoordsText() {
-          if (frozenSnapshot) {
-            coordsTextEl.innerHTML = `<span class="frozen">FROZEN</span>\n` + frozenSnapshot;
-            coordsBtn.textContent = "Resume / Copy";
-            return;
+        // ==========================================================
+        // CONTROL MODES
+        // ==========================================================
+        let currentMode = "orbit";
+
+        // --- Orbit ---
+        const orbitControls = new OrbitControls(camera, renderer.domElement);
+        orbitControls.target.set(0, 0.5, 0);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.08;
+        orbitControls.update();
+
+        // --- Fly (PointerLock for mouse look + custom WASD) ---
+        const flyPointerControls = new PointerLockControls(
+          camera,
+          renderer.domElement
+        );
+        const flyMoveState = {
+          forward: false,
+          backward: false,
+          left: false,
+          right: false,
+          up: false,
+          down: false,
+          sprint: false,
+        };
+
+        // --- Character (PointerLock + WASD + gravity) ---
+        const pointerControls = new PointerLockControls(
+          camera,
+          renderer.domElement
+        );
+        const player = {
+          velocity: new THREE.Vector3(),
+          direction: new THREE.Vector3(),
+          onGround: true,
+          height: 1.6,
+        };
+        const moveState = {
+          forward: false,
+          backward: false,
+          left: false,
+          right: false,
+          jump: false,
+          sprint: false,
+        };
+
+        // ==========================================================
+        // MODE SWITCHING
+        // ==========================================================
+        const buttons = document.querySelectorAll("#ui button");
+        const hintEl = document.getElementById("hint");
+        const hints = {
+          orbit: "Drag to rotate, scroll to zoom, right-drag to pan",
+          fly: "Click canvas, then WASD to move, Q/E up/down, Shift to sprint, drag to look",
+          character:
+            "Click canvas to lock mouse, WASD to move, Shift to run, Space to jump, ESC to release",
+        };
+
+        function requestLockForMode(mode) {
+          if (mode === "fly" && !flyPointerControls.isLocked) {
+            flyPointerControls.lock();
+          } else if (mode === "character" && !pointerControls.isLocked) {
+            pointerControls.lock();
           }
-          const p = camera.position;
-          const r = camera.rotation;
-          const r2d = 180 / Math.PI;
-          coordsTextEl.innerHTML =
-            `pos: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}\n` +
-            `rot: ${(r.x * r2d).toFixed(1)}°, ${(r.y * r2d).toFixed(1)}°, ${(r.z * r2d).toFixed(1)}°\n` +
-            `<span class="dim">mode: ${currentMode}</span>`;
-          coordsBtn.textContent = "Snapshot / Copy";
         }
 
-        coordsBtn.addEventListener("click", () => {
-          if (frozenSnapshot) {
-            navigator.clipboard.writeText(frozenSnapshot);
-            frozenSnapshot = null;
-            updateCoordsText();
-          } else {
-            frozenSnapshot = formatCameraAsCode(camera.position, camera.rotation);
-            navigator.clipboard.writeText(frozenSnapshot);
-            updateCoordsText();
+        function setMode(mode) {
+          // Disable all controls and release any active lock
+          orbitControls.enabled = false;
+          flyPointerControls.enabled = false;
+          if (pointerControls.isLocked) pointerControls.unlock();
+          if (flyPointerControls.isLocked) flyPointerControls.unlock();
+
+          // Clear movement state so held keys don't carry across modes
+          Object.keys(moveState).forEach((k) => (moveState[k] = false));
+          Object.keys(flyMoveState).forEach((k) => (flyMoveState[k] = false));
+
+          // Configure the new mode
+          if (mode === "orbit") {
+            orbitControls.enabled = true;
+            orbitControls.update();
+          } else if (mode === "fly") {
+            flyPointerControls.enabled = true;
+          } else if (mode === "character") {
+            camera.position.set(0, player.height, 5);
+            pointerControls.getObject().position.copy(camera.position);
+            player.velocity.set(0, 0, 0);
           }
-        });
 
-        // ==========================================================
-        // CHARACTER CONTROLLER (RAPIER)
-        // ==========================================================
-        const charBody = world.createRigidBody(
-          RAPIER.RigidBodyDesc.kinematicPositionBased()
-            .setTranslation(CHARACTER_SPAWN.x, CHARACTER_SPAWN.y, CHARACTER_SPAWN.z)
-        );
-        const charCollider = world.createCollider(
-          RAPIER.ColliderDesc.capsule(CAPSULE_HALF, CAPSULE_RADIUS),
-          charBody
-        );
-        const charController = world.createCharacterController(0.02);
-        charController.enableAutostep(0.35, 0.2, true);
-        charController.enableSnapToGround(0.3);
+          currentMode = mode;
 
-        let charVelY = 0;
-        let charGrounded = false;
-
-        function resetCharacterToSpawn() {
-          charBody.setTranslation({
-            x: CHARACTER_SPAWN.x,
-            y: CHARACTER_SPAWN.y,
-            z: CHARACTER_SPAWN.z,
-          }, true);
-          charVelY = 0;
-          charGrounded = false;
-          camera.position.set(
-            CHARACTER_SPAWN.x,
-            CHARACTER_SPAWN.y + EYE_OFFSET,
-            CHARACTER_SPAWN.z
+          // Update UI
+          buttons.forEach((b) =>
+            b.classList.toggle("active", b.dataset.mode === mode)
           );
+          hintEl.textContent = hints[mode];
+
+          // Auto-lock pointer-based modes (works because we're in a user gesture)
+          requestLockForMode(mode);
         }
 
-        // ==========================================================
-        // INPUT HANDLING (KEYBOARD + POINTER)
-        // ==========================================================
-        const keys = {};
-        window.addEventListener("keydown", (e) => {
-          if (e.target.tagName === "INPUT") return;
-          keys[e.code] = true;
-
-          if (currentMode === "editor" && (e.code === "Delete" || e.code === "Backspace")) {
-            if (selectedCollider) {
-              e.preventDefault();
-              removeCollider(selectedCollider);
-            }
-          }
-        });
-        window.addEventListener("keyup", (e) => {
-          keys[e.code] = false;
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => setMode(btn.dataset.mode));
         });
 
-        let pointerDownPos = null;
-        renderer.domElement.addEventListener("pointerdown", (e) => {
-          pointerDownPos = { x: e.clientX, y: e.clientY };
-          if ((currentMode === "fly" || currentMode === "character") && !pointerControls.isLocked) {
+        // ==========================================================
+        // POINTER LOCK: click canvas to re-enter locked modes
+        // ==========================================================
+        renderer.domElement.addEventListener("click", () => {
+          if (currentMode === "fly" && !flyPointerControls.isLocked) {
+            flyPointerControls.lock();
+          } else if (currentMode === "character" && !pointerControls.isLocked) {
             pointerControls.lock();
           }
         });
 
-        renderer.domElement.addEventListener("pointerup", (e) => {
-          if (currentMode !== "editor" || !pointerDownPos) return;
-          const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-          pointerDownPos = null;
-          if (dist < 5 && !transformControls.dragging) {
-            const hit = pickCollider(e.clientX, e.clientY);
-            selectCollider(hit);
+        // ==========================================================
+        // KEYBOARD INPUT
+        // ==========================================================
+        const onKeyDown = (e) => {
+          switch (e.code) {
+            // --- Shared movement ---
+            case "KeyW":
+            case "ArrowUp":
+              if (currentMode === "fly") flyMoveState.forward = true;
+              else if (currentMode === "character") moveState.forward = true;
+              break;
+            case "KeyS":
+            case "ArrowDown":
+              if (currentMode === "fly") flyMoveState.backward = true;
+              else if (currentMode === "character") moveState.backward = true;
+              break;
+            case "KeyA":
+            case "ArrowLeft":
+              if (currentMode === "fly") flyMoveState.left = true;
+              else if (currentMode === "character") moveState.left = true;
+              break;
+            case "KeyD":
+            case "ArrowRight":
+              if (currentMode === "fly") flyMoveState.right = true;
+              else if (currentMode === "character") moveState.right = true;
+              break;
+
+            // --- Vertical movement (fly only) ---
+            case "KeyE":
+              if (currentMode === "fly") flyMoveState.up = true;
+              break;
+            case "KeyQ":
+              if (currentMode === "fly") flyMoveState.down = true;
+              break;
+
+            // --- Jump / fly-up ---
+            case "Space":
+              if (currentMode === "character") {
+                moveState.jump = true;
+                e.preventDefault();
+              } else if (currentMode === "fly") {
+                flyMoveState.up = true;
+                e.preventDefault();
+              }
+              break;
+
+            case "ShiftLeft":
+              if (currentMode === "fly") flyMoveState.down = true;
+              else if (currentMode === "character") moveState.sprint = true;
+              break;
+
+            // --- Mode switching ---
+            case "Digit1":
+              setMode("orbit");
+              break;
+            case "Digit2":
+              setMode("fly");
+              break;
+            case "Digit3":
+              setMode("character");
+              break;
           }
-        });
-
-        // ==========================================================
-        // MODE SWITCHING & HARDCODED CAMERA INITIALIZATION
-        // ==========================================================
-        const hintEl = document.getElementById("hint");
-        const modeButtons = document.querySelectorAll("#ui button[data-mode]");
-
-        const HINTS = {
-          orbit: "Left-drag: rotate · Right-drag: pan · Scroll: zoom",
-          fly: "Click scene to look · WASD: move · Space/Shift: up/down",
-          character: "Click scene to look · WASD: walk · Space: jump",
-          editor: "Click collider to select · Drag gizmo to edit · Orbit enabled",
         };
 
-        function syncOrbitTargetFromCamera() {
-          const forward = new THREE.Vector3();
-          camera.getWorldDirection(forward);
-          orbitControls.target.copy(camera.position).addScaledVector(forward, 5);
-          orbitControls.update();
-        }
+        const onKeyUp = (e) => {
+          switch (e.code) {
+            case "KeyW":
+            case "ArrowUp":
+              if (currentMode === "fly") flyMoveState.forward = false;
+              else if (currentMode === "character") moveState.forward = false;
+              break;
+            case "KeyS":
+            case "ArrowDown":
+              if (currentMode === "fly") flyMoveState.backward = false;
+              else if (currentMode === "character") moveState.backward = false;
+              break;
+            case "KeyA":
+            case "ArrowLeft":
+              if (currentMode === "fly") flyMoveState.left = false;
+              else if (currentMode === "character") moveState.left = false;
+              break;
+            case "KeyD":
+            case "ArrowRight":
+              if (currentMode === "fly") flyMoveState.right = false;
+              else if (currentMode === "character") moveState.right = false;
+              break;
 
-        function setMode(mode) {
-          currentMode = mode;
-          modeButtons.forEach((btn) => {
-            btn.classList.toggle("active", btn.dataset.mode === mode);
-          });
-          hintEl.textContent = HINTS[mode] || "";
+            case "KeyE":
+              if (currentMode === "fly") flyMoveState.up = false;
+              break;
+            case "KeyQ":
+              if (currentMode === "fly") flyMoveState.down = false;
+              break;
 
-          const isEditor = mode === "editor";
-          panelEl.classList.toggle("visible", isEditor);
-          transformControls.enabled = isEditor;
-          tcHelper.visible = isEditor;
-          if (!isEditor) deselectCollider();
+            case "Space":
+              if (currentMode === "character") moveState.jump = false;
+              else if (currentMode === "fly") flyMoveState.up = false;
+              break;
 
-          if (mode === "orbit" || mode === "editor") {
-            if (pointerControls.isLocked) pointerControls.unlock();
-            orbitControls.enabled = true;
-            syncOrbitTargetFromCamera();
-          } else {
-            orbitControls.enabled = false;
-            if (mode === "character") {
-              resetCharacterToSpawn();
-            }
+            case "ShiftLeft":
+            case "ShiftRight":
+              if (currentMode === "fly") flyMoveState.down = false;
+              else if (currentMode === "character") moveState.sprint = false;
+              break;
           }
+        };
 
-          refreshEditorUI();
-          updateCoordsText();
-        }
-
-        modeButtons.forEach((btn) => {
-          btn.addEventListener("click", () => setMode(btn.dataset.mode));
-        });
-
-        // Apply hardcoded camera position & rotation AFTER controls & initial mode setup
-        function applyInitialCamera() {
-          camera.position.copy(INITIAL_CAMERA.position);
-          camera.rotation.copy(INITIAL_CAMERA.rotation);
-          syncOrbitTargetFromCamera();
-        }
-
-        setMode("orbit");
-        applyInitialCamera();
+        document.addEventListener("keydown", onKeyDown);
+        document.addEventListener("keyup", onKeyUp);
 
         // ==========================================================
-        // RESIZE + RENDER LOOP
+        // UPDATE FUNCTIONS
+        // ==========================================================
+        function updateFly(delta) {
+          if (!flyPointerControls.isLocked) return;
+
+          const obj = flyPointerControls.object;
+          const speed = FLY_SPEED * (flyMoveState.sprint ? 2.5 : 1) * delta;
+
+          const forward = new THREE.Vector3();
+          camera.getWorldDirection(forward);
+          forward.y = 0;
+          forward.normalize();
+
+          const right = new THREE.Vector3();
+          right.crossVectors(forward, camera.up).normalize();
+
+          if (flyMoveState.forward) obj.position.addScaledVector(forward, speed);
+          if (flyMoveState.backward)
+            obj.position.addScaledVector(forward, -speed);
+          if (flyMoveState.right) obj.position.addScaledVector(right, speed);
+          if (flyMoveState.left) obj.position.addScaledVector(right, -speed);
+          if (flyMoveState.up) obj.position.y += speed;
+          if (flyMoveState.down) obj.position.y -= speed;
+        }
+
+        function updateCharacter(delta) {
+          if (!pointerControls.isLocked) return;
+
+          const obj = pointerControls.getObject();
+          const speed = MOVE_SPEED * (moveState.sprint ? 2 : 1);
+
+          // Horizontal damping
+          player.velocity.x -= player.velocity.x * 10 * delta;
+          player.velocity.z -= player.velocity.z * 10 * delta;
+
+          player.direction.z =
+            Number(moveState.forward) - Number(moveState.backward);
+          player.direction.x =
+            Number(moveState.right) - Number(moveState.left);
+
+          if (moveState.forward || moveState.backward)
+            player.direction.normalize();
+          if (moveState.left || moveState.right) player.direction.normalize();
+
+          if (moveState.forward || moveState.backward)
+            player.velocity.z -= player.direction.z * speed * delta * 10;
+          if (moveState.left || moveState.right)
+            player.velocity.x -= player.direction.x * speed * delta * 10;
+
+          // Jump + gravity
+          if (moveState.jump && player.onGround) {
+            player.velocity.y = JUMP_SPEED * (moveState.sprint ? 1.3 : 1);
+            player.onGround = false;
+          }
+          player.velocity.y -= GRAVITY * delta;
+
+          pointerControls.moveRight(-player.velocity.x * delta);
+          pointerControls.moveForward(-player.velocity.z * delta);
+
+          obj.position.y += player.velocity.y * delta;
+
+          // Ground collision
+          if (obj.position.y < player.height) {
+            obj.position.y = player.height;
+            player.velocity.y = 0;
+            player.onGround = true;
+          }
+        }
+
+        // ==========================================================
+        // ANIMATION LOOP
+        // ==========================================================
+        const clock = new THREE.Clock();
+
+        function animate() {
+          requestAnimationFrame(animate);
+
+          const delta = Math.min(clock.getDelta(), 0.1);
+
+          if (currentMode === "orbit") orbitControls.update();
+          else if (currentMode === "fly") updateFly(delta);
+          else if (currentMode === "character") updateCharacter(delta);
+
+          renderer.render(scene, camera);
+          labelRenderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ==========================================================
+        // RESIZE
         // ==========================================================
         window.addEventListener("resize", () => {
           camera.aspect = window.innerWidth / window.innerHeight;
@@ -934,92 +597,14 @@ camera.rotation.set(${r.x}, ${r.y}, ${r.z});`;
           labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        const clock = new THREE.Clock();
-        const forwardVec = new THREE.Vector3();
-        const rightVec = new THREE.Vector3();
-        const moveVec = new THREE.Vector3();
-
-        function updateFly(dt) {
-          camera.getWorldDirection(forwardVec);
-          rightVec.crossVectors(forwardVec, camera.up).normalize();
-          moveVec.set(0, 0, 0);
-
-          if (keys["KeyW"] || keys["ArrowUp"]) moveVec.add(forwardVec);
-          if (keys["KeyS"] || keys["ArrowDown"]) moveVec.sub(forwardVec);
-          if (keys["KeyD"] || keys["ArrowRight"]) moveVec.add(rightVec);
-          if (keys["KeyA"] || keys["ArrowLeft"]) moveVec.sub(rightVec);
-          if (keys["Space"]) moveVec.y += 1;
-          if (keys["ShiftLeft"] || keys["ShiftRight"] || keys["KeyC"]) moveVec.y -= 1;
-
-          if (moveVec.lengthSq() > 0) {
-            moveVec.normalize().multiplyScalar(FLY_SPEED * dt);
-            camera.position.add(moveVec);
-          }
-        }
-
-        function updateCharacter(dt) {
-          camera.getWorldDirection(forwardVec);
-          forwardVec.y = 0;
-          if (forwardVec.lengthSq() > 0) forwardVec.normalize();
-          rightVec.crossVectors(forwardVec, THREE.Object3D.DEFAULT_UP).normalize();
-
-          moveVec.set(0, 0, 0);
-          if (keys["KeyW"] || keys["ArrowUp"]) moveVec.add(forwardVec);
-          if (keys["KeyS"] || keys["ArrowDown"]) moveVec.sub(forwardVec);
-          if (keys["KeyD"] || keys["ArrowRight"]) moveVec.add(rightVec);
-          if (keys["KeyA"] || keys["ArrowLeft"]) moveVec.sub(rightVec);
-          if (moveVec.lengthSq() > 0) moveVec.normalize().multiplyScalar(MOVE_SPEED);
-
-          if (charGrounded) {
-            charVelY = keys["Space"] ? JUMP_SPEED : -0.5;
-          } else {
-            charVelY -= GRAVITY * dt;
-          }
-
-          const desired = {
-            x: moveVec.x * dt,
-            y: charVelY * dt,
-            z: moveVec.z * dt,
-          };
-
-          charController.computeColliderMovement(charCollider, desired);
-          const corrected = charController.computedMovement();
-          charGrounded = charController.computedGrounded();
-          if (charGrounded && charVelY < 0) charVelY = 0;
-
-          const curPos = charBody.translation();
-          const nextPos = {
-            x: curPos.x + corrected.x,
-            y: curPos.y + corrected.y,
-            z: curPos.z + corrected.z,
-          };
-          charBody.setNextKinematicTranslation(nextPos);
-          world.step();
-
-          camera.position.set(nextPos.x, nextPos.y + EYE_OFFSET, nextPos.z);
-        }
-
-        function animate() {
-          requestAnimationFrame(animate);
-          const dt = Math.min(clock.getDelta(), 0.05);
-
-          if (currentMode === "orbit" || currentMode === "editor") {
-            orbitControls.update();
-          } else if (currentMode === "fly") {
-            updateFly(dt);
-          } else if (currentMode === "character") {
-            updateCharacter(dt);
-          }
-
-          updateCoordsText();
-          renderer.render(scene, camera);
-          labelRenderer.render(scene, camera);
-        }
-
-        animate();
+        // ==========================================================
+        // INIT
+        // ==========================================================
+        setMode("orbit");
       };
 
       main();
     </script>
   </body>
 </html>
+
